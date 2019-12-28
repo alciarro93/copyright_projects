@@ -1,9 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
+// <copyright file=Program.cs Copyright (c) 2019 All Rights Reserved </copyright>
+// <author> Alessio Ciarrocchi </author>
+// <date> 28/12/2019 04:40:40 </date>
+
+using System;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace copyright_projects
 {
@@ -17,24 +17,24 @@ namespace copyright_projects
 
             try
             {
-                Console.WriteLine("Bevenuto in copyright_projects (only .NET projects supported)\n" +
+                Console.WriteLine("Bevenuto in copyright_projects (atm only .NET projects are supported)\n" +
                 "Gli input contrassegnati da (*) sono OBBLIGATORI, gli altri sono facoltativi, premere INVIO per skippare l'inserimento.\n");
 
                 
                 while (string.IsNullOrEmpty(fullPath))
                 {
-                    Console.Write("\nPercorso completo progetto(*):  ");
+                    Console.Write("\nPercorso completo progetto(*): ");
                     fullPath = Console.ReadLine().Trim();
                 }
 
                 
                 while (string.IsNullOrEmpty(author))
                 {
-                    Console.Write("\nNome completo autore/i(*):  ");
+                    Console.Write("\nNome completo autore/i(*): ");
                     author = Console.ReadLine().Trim();
                 }
                 
-                Console.Write("\nNome azienda:  ");
+                Console.Write("\nNome azienda: ");
                 company = Console.ReadLine();
             }
             catch (Exception)
@@ -45,28 +45,44 @@ namespace copyright_projects
             string[] files = Directory.GetFiles(fullPath, "*.*cs", SearchOption.AllDirectories);
             foreach (string file in files)
             {
-                string tempFile = Path.GetFullPath(file) + ".tmp";
-
-                using (StreamReader reader = new StreamReader(file))
+                if (file != "AssemblyInfo.cs")
                 {
-                    using (StreamWriter writer = new StreamWriter(tempFile))
-                    {
-                        writer.WriteLine("// <copyright file=" + Path.GetFileNameWithoutExtension(file) + (!string.IsNullOrEmpty(company) ? " company=" + company : "") +
-                                          " Copyright (c) " + DateTime.Now.Year + " All Rights Reserved </copyright>\n" +
-                                          "// <author> " + author + " </author>\n" +
-                                          "// <date> " + DateTime.Now + " </date>\n\n");
-            
+                    string tempFile = Path.GetFullPath(file) + ".tmp";
 
-                        string line = string.Empty;
-                        while ((line = reader.ReadLine()) != null)
+                    using (StreamReader reader = new StreamReader(file))
+                    {
+                        using (StreamWriter writer = new StreamWriter(tempFile))
                         {
-                            writer.WriteLine(line);
+                            writer.WriteLine("// <copyright file=" + Path.GetFileName(file) + (!string.IsNullOrEmpty(company) ? " company=" + company : "") +
+                                              " Copyright (c) " + DateTime.Now.Year + " All Rights Reserved </copyright>\n" +
+                                              "// <author> " + author + " </author>\n" +
+                                              "// <date> " + DateTime.Now + " </date>\n");
+
+                            int i = 0;
+                            bool skip = false;
+                            int maxLineSkip = 2;
+                            string line = string.Empty;
+                            while ((line = reader.ReadLine()) != null)
+                            {
+                                if (i == 0 && line.StartsWith("// <copyright file="))
+                                {
+                                    skip = true;
+                                    maxLineSkip = 3;
+                                }
+
+                                if (!skip || i > maxLineSkip)
+                                {
+                                    writer.WriteLine(line);
+                                }
+                                i++;
+                            }
                         }
                     }
+                    File.Delete(file);
+                    File.Move(tempFile, file);
                 }
-                File.Delete(file);
-                File.Move(tempFile, file);
             }
+
         }
     }
 }
