@@ -1,8 +1,9 @@
 // <copyright file=Program.cs Copyright (c) 2019 All Rights Reserved </copyright>
 // <author> Alessio Ciarrocchi </author>
-// <date> 28/12/2019 04:40:40 </date>
+// <date> 30/12/2019 09:27:32 </date>
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 
 namespace copyright_projects
@@ -41,48 +42,111 @@ namespace copyright_projects
             {
                 Environment.Exit(0);
             }
+            Console.WriteLine("\nElaborazione in corso...");
 
-            string[] files = Directory.GetFiles(fullPath, "*.*cs", SearchOption.AllDirectories);
-            foreach (string file in files)
+            //string[] files = Directory.GetFiles(fullPath, "*.*cs", SearchOption.AllDirectories);
+            DirectoryInfo dir_info = new DirectoryInfo(fullPath);
+            List<string> file_list = new List<string>();
+            SearchDirectory(dir_info, file_list);
+
+            int okFile = 0;
+            int skipFile = 0;
+            //file_list is a list of fullpath to files
+            foreach (string file in file_list)
             {
-                if (file != "AssemblyInfo.cs")
+                if (CanEditFile(file))
                 {
-                    string tempFile = Path.GetFullPath(file) + ".tmp";
-
-                    using (StreamReader reader = new StreamReader(file))
+                    try
                     {
-                        using (StreamWriter writer = new StreamWriter(tempFile))
+                        string tempFile = file + ".tmp";
+                        using (StreamReader reader = new StreamReader(file))
                         {
-                            writer.WriteLine("// <copyright file=" + Path.GetFileName(file) + (!string.IsNullOrEmpty(company) ? " company=" + company : "") +
-                                              " Copyright (c) " + DateTime.Now.Year + " All Rights Reserved </copyright>\n" +
-                                              "// <author> " + author + " </author>\n" +
-                                              "// <date> " + DateTime.Now + " </date>\n");
-
-                            int i = 0;
-                            bool skip = false;
-                            int maxLineSkip = 2;
-                            string line = string.Empty;
-                            while ((line = reader.ReadLine()) != null)
+                            using (StreamWriter writer = new StreamWriter(tempFile))
                             {
-                                if (i == 0 && line.StartsWith("// <copyright file="))
-                                {
-                                    skip = true;
-                                    maxLineSkip = 3;
-                                }
+                                writer.WriteLine("// <copyright file=" + Path.GetFileName(file) + (!string.IsNullOrEmpty(company) ? " company=" + company : "") +
+                                                  " Copyright (c) " + DateTime.Now.Year + " All Rights Reserved </copyright>\n" +
+                                                  "// <author> " + author + " </author>\n" +
+                                                  "// <date> " + DateTime.UtcNow.ToString() + " </date>\n");
 
-                                if (!skip || i > maxLineSkip)
+                                int i = 0;
+                                bool skip = false;
+                                int maxLineSkip = 2;
+                                string line = string.Empty;
+                                while ((line = reader.ReadLine()) != null)
                                 {
-                                    writer.WriteLine(line);
+                                    if (i == 0 && line.StartsWith("// <copyright file="))
+                                    {
+                                        skip = true;
+                                        maxLineSkip = 3;
+                                    }
+
+                                    if (!skip || i > maxLineSkip)
+                                    {
+                                        writer.WriteLine(line);
+                                    }
+                                    i++;
                                 }
-                                i++;
                             }
                         }
+                        File.Delete(file);
+                        File.Move(tempFile, file);
+                        okFile++;
                     }
-                    File.Delete(file);
-                    File.Move(tempFile, file);
+                    catch
+                    {
+                        skipFile++;
+                        continue;
+                    }       
+                }
+                else
+                {
+                    skipFile++;
                 }
             }
-
+            Console.WriteLine("Elaborazione conclusa con successo!");
+            Console.WriteLine("\n{0} file modificati, {1} file saltati", okFile, skipFile);
+            Console.WriteLine("Premere INVIO per chiudere l'applicazione...");
+            Console.ReadLine();
         }
+
+        /// <summary>
+        /// Ricerca ricorsiva di tutti i file contenuti nel percorso specificato e nelle sue sotto cartelle.
+        /// Se l'utente non ha i permessi di lettura sulla cartella, questa viene saltata.
+        /// </summary>
+        /// <param name="dir_info">info cartella</param>
+        /// <param name="file_list">lista file trovati</param>
+        private static void SearchDirectory(DirectoryInfo dir_info, List<string> file_list)
+        {
+            try
+            {
+                foreach (DirectoryInfo subdir_info in dir_info.GetDirectories())
+                {
+                    SearchDirectory(subdir_info, file_list);
+                }
+            }
+            catch
+            {
+            }
+            try
+            {
+                foreach (FileInfo file_info in dir_info.GetFiles("*.*cs"))
+                {
+                    file_list.Add(file_info.FullName);
+                }
+            }
+            catch
+            {
+            }
+        }
+
+        private static bool CanEditFile(string file)
+        {
+            if (file != "AssemblyInfo.cs" && !file.EndsWith("AssemblyInfo.cs"))
+            {
+                return true;
+            }
+            return false;
+        }
+
     }
 }
