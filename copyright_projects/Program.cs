@@ -12,101 +12,107 @@ namespace copyright_projects
     {
         static void Main(string[] args)
         {
-            string fullPath = "";
-            string author = "";
-            string company = "";
-
             try
             {
-                Console.WriteLine("Bevenuto in copyright_projects (atm only .NET projects are supported)\n" +
+                while (true)
+                {
+                    string fullPath = "";
+                    string author = "";
+                    string company = "";
+                    Console.Clear();
+                    Console.WriteLine("Bevenuto in copyright_projects (atm only .NET projects are supported)\n" +
                 "Gli input contrassegnati da (*) sono OBBLIGATORI, gli altri sono facoltativi, premere INVIO per skippare l'inserimento.\n");
 
-                
-                while (string.IsNullOrEmpty(fullPath))
-                {
-                    Console.Write("\nPercorso completo progetto(*): ");
-                    fullPath = Console.ReadLine().Trim();
-                }
-
-                
-                while (string.IsNullOrEmpty(author))
-                {
-                    Console.Write("\nNome completo autore/i(*): ");
-                    author = Console.ReadLine().Trim();
-                }
-                
-                Console.Write("\nNome azienda: ");
-                company = Console.ReadLine();
-            }
-            catch (Exception)
-            {
-                Environment.Exit(0);
-            }
-            Console.WriteLine("\nElaborazione in corso...");
-
-            //string[] files = Directory.GetFiles(fullPath, "*.*cs", SearchOption.AllDirectories);
-            DirectoryInfo dir_info = new DirectoryInfo(fullPath);
-            List<string> file_list = new List<string>();
-            SearchDirectory(dir_info, file_list);
-
-            int okFile = 0;
-            int skipFile = 0;
-            //file_list is a list of fullpath to files
-            foreach (string file in file_list)
-            {
-                if (CanEditFile(file))
-                {
-                    try
+                    while (string.IsNullOrEmpty(fullPath))
                     {
-                        string tempFile = file + ".tmp";
-                        using (StreamReader reader = new StreamReader(file))
+                        Console.Write("\nPercorso completo progetto(*): ");
+                        fullPath = Console.ReadLine().Trim();
+                    }
+
+
+                    while (string.IsNullOrEmpty(author))
+                    {
+                        Console.Write("\nNome completo autore/i(*): ");
+                        author = Console.ReadLine().Trim();
+                    }
+
+                    Console.Write("\nNome azienda: ");
+                    company = Console.ReadLine();
+
+                    Console.WriteLine("\nElaborazione in corso...");
+
+                    //string[] files = Directory.GetFiles(fullPath, "*.*cs", SearchOption.AllDirectories);
+                    DirectoryInfo dir_info = new DirectoryInfo(fullPath);
+                    List<string> file_list = new List<string>();
+                    SearchDirectory(dir_info, file_list);
+
+                    int okFile = 0;
+                    int skipFile = 0;
+                    //file_list is a list of fullpath to files
+                    foreach (string file in file_list)
+                    {
+                        if (CanEditFile(file))
                         {
-                            using (StreamWriter writer = new StreamWriter(tempFile))
+                            try
                             {
-                                writer.WriteLine("// <copyright file=" + Path.GetFileName(file) + (!string.IsNullOrEmpty(company) ? " company=" + company : "") +
-                                                  " Copyright (c) " + DateTime.Now.Year + " All Rights Reserved </copyright>\n" +
-                                                  "// <author> " + author + " </author>\n" +
-                                                  "// <date> " + DateTime.UtcNow.ToString() + " </date>\n");
-
-                                int i = 0;
-                                bool skip = false;
-                                int maxLineSkip = 2;
-                                string line = string.Empty;
-                                while ((line = reader.ReadLine()) != null)
+                                string tempFile = file + ".tmp";
+                                using (StreamReader reader = new StreamReader(file))
                                 {
-                                    if (i == 0 && line.StartsWith("// <copyright file="))
+                                    using (StreamWriter writer = new StreamWriter(tempFile))
                                     {
-                                        skip = true;
-                                        maxLineSkip = 3;
-                                    }
+                                        writer.WriteLine("// <copyright file=" + Path.GetFileName(file) + (!string.IsNullOrEmpty(company) ? " company=" + company : "") +
+                                                          " Copyright (c) " + DateTime.Now.Year + " All Rights Reserved </copyright>\n" +
+                                                          "// <author> " + author + " </author>\n" +
+                                                          "// <date> " + DateTime.UtcNow.ToString() + " </date>\n");
 
-                                    if (!skip || i > maxLineSkip)
-                                    {
-                                        writer.WriteLine(line);
+                                        int i = 0;
+                                        bool skip = false;
+                                        int maxLineSkip = 2;
+                                        string line = string.Empty;
+                                        while ((line = reader.ReadLine()) != null)
+                                        {
+                                            if (i == 0 && line.StartsWith("// <copyright file="))
+                                            {
+                                                skip = true;
+                                                maxLineSkip = 3;
+                                            }
+
+                                            if (!skip || i > maxLineSkip)
+                                            {
+                                                writer.WriteLine(line);
+                                            }
+                                            i++;
+                                        }
                                     }
-                                    i++;
                                 }
+                                File.Delete(file);
+                                File.Move(tempFile, file);
+                                okFile++;
+                            }
+                            catch
+                            {
+                                skipFile++;
+                                continue;
                             }
                         }
-                        File.Delete(file);
-                        File.Move(tempFile, file);
-                        okFile++;
+                        else
+                        {
+                            skipFile++;
+                        }
                     }
-                    catch
-                    {
-                        skipFile++;
-                        continue;
-                    }       
-                }
-                else
-                {
-                    skipFile++;
+                    Console.WriteLine("Elaborazione conclusa con successo!");
+                    Console.WriteLine("\n{0} file modificati, {1} file saltati", okFile, skipFile);
+                    Console.WriteLine("Premere INVIO per iniziare da capo...");
+                    Console.ReadLine();
                 }
             }
-            Console.WriteLine("Elaborazione conclusa con successo!");
-            Console.WriteLine("\n{0} file modificati, {1} file saltati", okFile, skipFile);
-            Console.WriteLine("Premere INVIO per chiudere l'applicazione...");
-            Console.ReadLine();
+            catch (Exception exp)
+            {
+                Console.WriteLine("\nErrore: " + exp.Message);
+                Console.WriteLine("Premere INVIO per chiudere l'applicazione...");
+                Console.ReadLine();
+                Environment.Exit(0);
+            }
         }
 
         /// <summary>
