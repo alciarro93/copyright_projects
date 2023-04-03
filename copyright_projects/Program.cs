@@ -21,7 +21,7 @@ namespace copyright_projects
                     string company = "";
                     Console.Clear();
                     Console.WriteLine("Bevenuto in copyright_projects (atm only .NET projects are supported)\n" +
-                "Gli input contrassegnati da (*) sono OBBLIGATORI, gli altri sono facoltativi, premere INVIO per skippare l'inserimento.\n");
+                "Gli input contrassegnati da (*) sono OBBLIGATORI, gli altri sono facoltativi, premere INVIO per saltare l'inserimento.\n");
 
                     while (string.IsNullOrEmpty(fullPath))
                     {
@@ -63,7 +63,7 @@ namespace copyright_projects
                                         writer.WriteLine("// <copyright file=" + Path.GetFileName(file) + (!string.IsNullOrEmpty(company) ? " company=" + company : "") +
                                                           " Copyright (c) " + DateTime.Now.Year + " All Rights Reserved </copyright>\n" +
                                                           "// <author> " + author + " </author>\n" +
-                                                          "// <date> " + DateTime.UtcNow.ToString() + " </date>\n");
+                                                          "// <date> " + DateTime.UtcNow.ToString() + " UTC+0 </date>\n");
 
                                         int i = 0;
                                         bool skip = false;
